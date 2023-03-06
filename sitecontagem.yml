@@ -1,0 +1,51 @@
+# Para retornar informacoes sobre o Pod como o Node e o Namespace foi utilizado
+# o recurso conhecido como Downward API:
+# https://kubernetes.io/docs/concepts/workloads/pods/downward-api/
+# https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testes-sitecontagem
+spec:
+  selector:
+    matchLabels:
+      app: testes-sitecontagem
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: testes-sitecontagem
+    spec:
+      containers:
+        - name: sitecontagem
+          image: renatogroffe/sitecontagem-dotnet7-healthcheck:1
+          env:
+          - name: MensagemVariavel
+            value: Testes com .NET 7 + ASP.NET Core + Azure Kubernetes Service (AKS)
+          - name: Kubernetes__Node
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: Kubernetes__Namespace
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          ports:
+          - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: 80
+            failureThreshold: 2
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testes-sitecontagem-service
+spec:
+  selector:
+    app: testes-sitecontagem
+  ports:
+    - port: 80
+  type: LoadBalancer
